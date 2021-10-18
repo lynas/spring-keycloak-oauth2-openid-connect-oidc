@@ -17,6 +17,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClient
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService
+import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler
 import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.oauth2.client.registration.ClientRegistrations
@@ -25,6 +26,7 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser
 import org.springframework.security.oauth2.core.oidc.user.OidcUser
 import org.springframework.security.oauth2.core.user.OAuth2User
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
 import java.util.*
@@ -43,12 +45,18 @@ fun main(args: Array<String>) {
 class OAuth2LoginSecurityConfig : WebSecurityConfigurerAdapter() {
 
     override fun configure(http: HttpSecurity) {
-        http.authorizeRequests().anyRequest().authenticated()
+        http
+            .authorizeRequests().antMatchers("/").permitAll()
+            .and()
+            .authorizeRequests().anyRequest().authenticated()
             .and()
             .oauth2Login {
                 it.userInfoEndpoint { u ->
                     u.oidcUserService(oidcUserService())
                 }
+            }
+            .logout {
+                it.logoutSuccessHandler(oidcLogoutSuccessHandler())
             }
 
     }
@@ -79,6 +87,13 @@ class OAuth2LoginSecurityConfig : WebSecurityConfigurerAdapter() {
             .build()
         return InMemoryClientRegistrationRepository(clientRegistration)
     }
+
+
+    private fun oidcLogoutSuccessHandler(): LogoutSuccessHandler {
+        val oidcLogoutSuccessHandler = OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository())
+        oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}")
+        return oidcLogoutSuccessHandler
+    }
 }
 
 @Controller
@@ -101,7 +116,7 @@ class DemoController {
         return "private"
     }
 
-    @GetMapping("/public")
+    @GetMapping("/")
     suspend fun public() = "public"
 
 }
