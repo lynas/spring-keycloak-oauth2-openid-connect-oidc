@@ -128,5 +128,5 @@ fun getRolesFromToken(token: String): HashSet<GrantedAuthority> {
     val ra = map["resource_access"] as Map<String, Any>
     val ad = ra["app-demo"] as Map<String, String>
     val roles = ad["roles"] as ArrayList<String>
-    return roles.map { "ROLE_${it.toUpperCase()}" }.map { SimpleGrantedAuthority(it) }.toHashSet()
+    return roles.map { "ROLE_${it.uppercase(Locale.getDefault())}" }.map { SimpleGrantedAuthority(it) }.toHashSet()
 }
