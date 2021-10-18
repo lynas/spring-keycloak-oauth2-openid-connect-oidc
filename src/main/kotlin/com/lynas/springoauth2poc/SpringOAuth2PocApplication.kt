@@ -5,7 +5,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -16,7 +15,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient
-import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler
 import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.oauth2.client.registration.ClientRegistrations
@@ -26,7 +24,6 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.oauth2.core.user.OAuth2User
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
 import java.util.*
@@ -52,17 +49,6 @@ class AppSecurityConfig : WebSecurityConfigurerAdapter() {
                     u.userService(oAuth2UserService())
                 }
             }
-            .logout {
-                it.logoutSuccessHandler()
-            }
-    }
-
-    private fun oidcLogoutSuccessHandler(): LogoutSuccessHandler {
-        val oidcLogoutSuccessHandler = OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository)
-        // Sets the location that the End-User's User Agent will be redirected to
-        // after the logout has been performed at the Provider
-        oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}")
-        return oidcLogoutSuccessHandler
     }
 
     @Bean
