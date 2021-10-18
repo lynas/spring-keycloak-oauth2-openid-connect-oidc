@@ -68,8 +68,6 @@ class OAuth2LoginSecurityConfig : WebSecurityConfigurerAdapter() {
         return OAuth2UserService { userRequest ->
             var oidcUser = delegate.loadUser(userRequest)
             val accessToken = userRequest.accessToken
-            println("----------------------**********************-------------------")
-            println(accessToken)
             val mappedAuthorities = getRolesFromToken(accessToken.tokenValue)
             oidcUser = DefaultOidcUser(mappedAuthorities, oidcUser.idToken, oidcUser.userInfo)
 
