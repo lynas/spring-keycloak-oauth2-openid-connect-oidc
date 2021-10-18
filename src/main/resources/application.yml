@@ -9,5 +9,6 @@
 #          keycloak:
 #            client-id: app-demo
 #            client-secret: e3f519b4-0272-4261-9912-8b7453ac4ecd
+#            scope: openid
 server:
   port: 8082

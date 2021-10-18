@@ -15,14 +15,15 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService
 import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.oauth2.client.registration.ClientRegistrations
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository
-import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser
+import org.springframework.security.oauth2.core.oidc.user.OidcUser
 import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
@@ -39,35 +40,42 @@ fun main(args: Array<String>) {
 
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @EnableWebSecurity
-class AppSecurityConfig : WebSecurityConfigurerAdapter() {
+class OAuth2LoginSecurityConfig : WebSecurityConfigurerAdapter() {
 
     override fun configure(http: HttpSecurity) {
         http.authorizeRequests().anyRequest().authenticated()
             .and()
             .oauth2Login {
                 it.userInfoEndpoint { u ->
-                    u.userService(oAuth2UserService())
+                    u.oidcUserService(oidcUserService())
                 }
             }
+
     }
 
     @Bean
-    fun oAuth2UserService(): OAuth2UserService<OAuth2UserRequest, OAuth2User> {
-        val delegate = DefaultOAuth2UserService()
+    fun oidcUserService(): OAuth2UserService<OidcUserRequest, OidcUser> {
+        val delegate = OidcUserService()
+
         return OAuth2UserService { userRequest ->
-            var oauth2User = delegate.loadUser(userRequest)
-            val accessToken = userRequest.accessToken.tokenValue
-            oauth2User = DefaultOAuth2User(getRolesFromToken(accessToken), oauth2User.attributes, "sub")
-            oauth2User
+            var oidcUser = delegate.loadUser(userRequest)
+            val accessToken = userRequest.accessToken
+            println("----------------------**********************-------------------")
+            println(accessToken)
+            val mappedAuthorities = getRolesFromToken(accessToken.tokenValue)
+            oidcUser = DefaultOidcUser(mappedAuthorities, oidcUser.idToken, oidcUser.userInfo)
+
+            oidcUser
         }
     }
 
     @Bean
     fun clientRegistrationRepository(): ClientRegistrationRepository {
-        val clientRegistration: ClientRegistration = ClientRegistrations
+        val clientRegistration = ClientRegistrations
             .fromIssuerLocation("http://localhost:8080/auth/realms/demo")
             .clientId("app-demo")
             .clientSecret("e3f519b4-0272-4261-9912-8b7453ac4ecd")
+            .scope("openid")
             .build()
         return InMemoryClientRegistrationRepository(clientRegistration)
     }
@@ -107,6 +115,5 @@ fun getRolesFromToken(token: String): HashSet<GrantedAuthority> {
     val ra = map["resource_access"] as Map<String, Any>
     val ad = ra["app-demo"] as Map<String, String>
     val roles = ad["roles"] as ArrayList<String>
-    return roles.map { "ROLE_${it.uppercase()}" }.map { SimpleGrantedAuthority(it) }.toHashSet()
-
+    return roles.map { "ROLE_${it.toUpperCase()}" }.map { SimpleGrantedAuthority(it) }.toHashSet()
 }
