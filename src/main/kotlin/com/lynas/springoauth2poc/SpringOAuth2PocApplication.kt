@@ -79,8 +79,8 @@ class OAuth2LoginSecurityConfig : WebSecurityConfigurerAdapter() {
     fun clientRegistrationRepository(): ClientRegistrationRepository {
         val clientRegistration = ClientRegistrations
             .fromIssuerLocation("http://localhost:8080/auth/realms/demo")
-            .clientId("app-demo")
-            .clientSecret("e3f519b4-0272-4261-9912-8b7453ac4ecd")
+            .clientId("demo")
+            .clientSecret("9bc8a140-187f-43f2-8efb-8b9d6686824f")
             .scope("openid")
             .build()
         return InMemoryClientRegistrationRepository(clientRegistration)
@@ -98,7 +98,7 @@ class OAuth2LoginSecurityConfig : WebSecurityConfigurerAdapter() {
 class DemoController {
 
     @GetMapping("/private")
-    suspend fun private(
+    fun private(
         @RegisteredOAuth2AuthorizedClient authorizedClient: OAuth2AuthorizedClient,
         @AuthenticationPrincipal oauth2User: OAuth2User
     ): String {
@@ -107,7 +107,7 @@ class DemoController {
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping("/private/admin")
-    suspend fun privateAdmin(
+    fun privateAdmin(
         @RegisteredOAuth2AuthorizedClient authorizedClient: OAuth2AuthorizedClient,
         @AuthenticationPrincipal oauth2User: OAuth2User
     ): String {
@@ -115,7 +115,7 @@ class DemoController {
     }
 
     @GetMapping("/")
-    suspend fun public() = "public"
+    fun public() = "public"
 
 }
 
@@ -125,8 +125,9 @@ fun getRolesFromToken(token: String): HashSet<GrantedAuthority> {
     val decoder = Base64.getDecoder();
     val payload = String(decoder.decode(chunks[1]))
     val map = ObjectMapper().readValue<MutableMap<String, Any>>(payload)
+    println(map.toString())
     val ra = map["resource_access"] as Map<String, Any>
-    val ad = ra["app-demo"] as Map<String, String>
+    val ad = ra["demo"] as Map<String, String>
     val roles = ad["roles"] as ArrayList<String>
-    return roles.map { "ROLE_${it.uppercase(Locale.getDefault())}" }.map { SimpleGrantedAuthority(it) }.toHashSet()
+    return roles.map { SimpleGrantedAuthority(it) }.toHashSet()
 }

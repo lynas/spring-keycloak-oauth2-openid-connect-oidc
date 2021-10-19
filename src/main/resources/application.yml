@@ -1,3 +1,7 @@
+server:
+  port: 8082
+
+# Another way of configuring ClientRegistrationRepository
 #spring:
 #  security:
 #    oauth2:
@@ -10,5 +14,3 @@
 #            client-id: app-demo
 #            client-secret: e3f519b4-0272-4261-9912-8b7453ac4ecd
 #            scope: openid
-server:
-  port: 8082
