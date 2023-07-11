@@ -6,10 +6,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.authority.SimpleGrantedAuthority
@@ -18,7 +17,6 @@ import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2Aut
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler
-import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.oauth2.client.registration.ClientRegistrations
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository
@@ -26,6 +24,7 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser
 import org.springframework.security.oauth2.core.oidc.user.OidcUser
 import org.springframework.security.oauth2.core.user.OAuth2User
+import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
@@ -40,12 +39,13 @@ fun main(args: Array<String>) {
 }
 
 
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity(prePostEnabled = true)
 @EnableWebSecurity
-class OAuth2LoginSecurityConfig : WebSecurityConfigurerAdapter() {
+class OAuth2LoginSecurityConfig {
 
-    override fun configure(http: HttpSecurity) {
-        http
+    @Bean
+    fun configure(http: HttpSecurity): SecurityFilterChain {
+        return http
             .authorizeRequests().antMatchers("/").permitAll()
             .and()
             .authorizeRequests().anyRequest().authenticated()
@@ -57,7 +57,7 @@ class OAuth2LoginSecurityConfig : WebSecurityConfigurerAdapter() {
             }
             .logout {
                 it.logoutSuccessHandler(oidcLogoutSuccessHandler())
-            }
+            }.build()
 
     }
 
@@ -78,9 +78,9 @@ class OAuth2LoginSecurityConfig : WebSecurityConfigurerAdapter() {
     @Bean
     fun clientRegistrationRepository(): ClientRegistrationRepository {
         val clientRegistration = ClientRegistrations
-            .fromIssuerLocation("http://localhost:8080/auth/realms/demo")
+            .fromIssuerLocation("http://localhost:8080/realms/demo")
             .clientId("demo")
-            .clientSecret("9bc8a140-187f-43f2-8efb-8b9d6686824f")
+            .clientSecret("HCD3Fcz2yBgReOsDXN640OhMxRdsGlcV")
             .scope("openid")
             .build()
         return InMemoryClientRegistrationRepository(clientRegistration)
@@ -125,9 +125,8 @@ fun getRolesFromToken(token: String): HashSet<GrantedAuthority> {
     val decoder = Base64.getDecoder();
     val payload = String(decoder.decode(chunks[1]))
     val map = ObjectMapper().readValue<MutableMap<String, Any>>(payload)
-    println(map.toString())
-    val ra = map["resource_access"] as Map<String, Any>
-    val ad = ra["demo"] as Map<String, String>
-    val roles = ad["roles"] as ArrayList<String>
+    println(ObjectMapper().writeValueAsString(map))
+    val ra = map["realm_access"] as Map<String, Any>
+    val roles = ra["roles"] as ArrayList<String>
     return roles.map { SimpleGrantedAuthority(it) }.toHashSet()
 }
